@@ -152,60 +152,70 @@ namespace VDCS_Expenses
 
         protected string GetPeopleHRData()
         {
-            string ExpenseResults = "";
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create("https://api.peoplehr.net/Query");
-            httpWebRequest.ContentType = "text/json";
-            httpWebRequest.Method = "POST";
-
-            // a46c26f6-7874-4bf4-b5b0-d221eb2c54f9
-
-            using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+            try
             {
-                string json = "{\"APIKey\":\"" + PeopleHRKey.Text + "\",\"Action\":\"GetQueryResultByQueryName\",\"QueryName\":\"ExpenseToXero\"}";
-                streamWriter.Write(json);
-            }
-            var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-            {
-                string ExpData = streamReader.ReadToEnd();
-            
+                string ExpenseResults = "";
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                var httpWebRequest = (HttpWebRequest)WebRequest.Create("https://api.peoplehr.net/Query");
+                httpWebRequest.ContentType = "text/json";
+                httpWebRequest.Method = "POST";
 
-                var Result = JObject.Parse(ExpData);
+                // a46c26f6-7874-4bf4-b5b0-d221eb2c54f9
 
-                ExpenseResults = String.Concat("<center><table border=1><tr><td>First Name</td >",
-                    "<td>Last Name</td >",
-                    "<td>Description</td >",
-                    "<td>Date Submitted</td >",
-                    "<td>Amount</td >",
-                    "<td>Taxable Amount</td >",
-                    "<td>Category", "</td></tr>");
-                
-                var ResultLine = Result["Result"].Children();
-                    foreach (JToken Expense in ResultLine)
-                    
+                using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
                 {
-                    double LineValue = (double)Expense["Expense Line Amount"];
-                    decimal VATValue = 0;
-                    if (Expense["Expense Line Taxable Amount"].ToString() == "")
-                    {
-                        VATValue = 0;
-                    }
-                    else
-                    {
-                        VATValue = (decimal)Math.Round(LineValue - (LineValue / 1.2), 2);
-                    }
-                    ExpenseResults = ExpenseResults + String.Concat("<tr><td>",Expense["First Name"].ToString(), "</td>",
-                        "<td>", Expense["Last Name"].ToString(), "</td>",
-                        "<td>", Expense["Expense Report Description"].ToString(), "</td>",
-                        "<td>", Expense["Expense Date Submitted"].ToString(), "</td>",
-                        "<td>", Expense["Expense Line Amount"].ToString(), "</td>",
-                        "<td>", VATValue,  "</td>",
-                        "<td>", Expense["Expense Line Category"].ToString(), "</td></tr>");
-                   
+                    string json = "{\"APIKey\":\"" + PeopleHRKey.Text + "\",\"Action\":\"GetQueryResultByQueryName\",\"QueryName\":\"ExpenseToXero\"}";
+                    streamWriter.Write(json);
                 }
-                ExpenseResults = ExpenseResults + "</table></center>";
-                Expenses.InnerHtml = ExpenseResults;
-                return ExpData;
+                var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+                using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                {
+                    string ExpData = streamReader.ReadToEnd();
+
+
+                    var Result = JObject.Parse(ExpData);
+
+                    ExpenseResults = String.Concat("<center><table border=1><tr><td>First Name</td >",
+                        "<td>Last Name</td >",
+                        "<td>Description</td >",
+                        "<td>Date Submitted</td >",
+                        "<td>Amount</td >",
+                        "<td>Taxable Amount</td >",
+                        "<td>Category", "</td></tr>");
+
+                    var ResultLine = Result["Result"].Children();
+                    foreach (JToken Expense in ResultLine)
+
+                    {
+                        double LineValue = (double)Expense["Expense Line Amount"];
+                        decimal VATValue = 0;
+                        if (Expense["Expense Line Taxable Amount"].ToString() == "")
+                        {
+                            VATValue = 0;
+                        }
+                        else
+                        {
+                            VATValue = (decimal)Math.Round(LineValue - (LineValue / 1.2), 2);
+                        }
+                        ExpenseResults = ExpenseResults + String.Concat("<tr><td>", Expense["First Name"].ToString(), "</td>",
+                            "<td>", Expense["Last Name"].ToString(), "</td>",
+                            "<td>", Expense["Expense Report Description"].ToString(), "</td>",
+                            "<td>", Expense["Expense Date Submitted"].ToString(), "</td>",
+                            "<td>", Expense["Expense Line Amount"].ToString(), "</td>",
+                            "<td>", VATValue, "</td>",
+                            "<td>", Expense["Expense Line Category"].ToString(), "</td></tr>");
+
+                    }
+                    ExpenseResults = ExpenseResults + "</table></center>";
+                    Expenses.InnerHtml = ExpenseResults;
+                    return ExpData;
+                }
+            }
+
+            catch (Exception exc)
+            {
+                throw new Exception("Problem Connecting to xero" + exc.ToString());
+
             }
         }
 
